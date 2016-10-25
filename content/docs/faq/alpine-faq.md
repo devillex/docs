@@ -59,29 +59,20 @@ execution, or on the wercker web will work.
 
 When using using an image based on the default Alpine image, you may find that variables you create (by `export var=value`) on the image arent't available to the internal/docker-push step. This is because Alpine by default doesn't have "env --null" support, which wercker uses to sync the env. This does not affect variables that were available to the image prior to the execution of the steps, such as wercker environment variables, variables defined on the Environment tab or pipeline config of the interface.
 
-In the example below, `$GCR_JSON_KEY_FILE` is available to the docker-push step and has a value, whereas `$PACKAGE_VERSION` is not and is in fact empty.
+In the example below, `$GCR_JSON_KEY_FILE` and `$GCR_REPOSITORY_NAME` (set via Environment tab) is available to the docker-push step and has a value, whereas `$PACKAGE_VERSION` is not and is in fact empty.
 
 ```yaml
 push:
   box: nginx:stable-alpine
   steps:
     - script:
-        name: set tag version from cache
-        code: |
-          source PACKAGE_JSON_VERSION.txt
-          echo read version \'$PACKAGE_JSON_VERSION\'
-    - script:
         name: set docker image tag
-        code: |
-          [ "$WERCKER_GIT_BRANCH" = "master" ] \
-          && export PACKAGE_VERSION=$PACKAGE_JSON_VERSION \
-          || export PACKAGE_VERSION=$WERCKER_GIT_COMMIT
-          echo using \'$PACKAGE_VERSION\' as tag
+        code: export PACKAGE_VERSION=$WERCKER_GIT_COMMIT
     - internal/docker-push:
         registry: https://gcr.io
         username: _json_key
         password: $GCR_JSON_KEY_FILE
-        repository: gcr.io/arctic-eye-468/admin-front-end
+        repository: $GCR_REPOSITORY_NAME
         tag: $PACKAGE_VERSION
 ```
 
