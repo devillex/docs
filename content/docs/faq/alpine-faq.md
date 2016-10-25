@@ -84,3 +84,5 @@ push:
         repository: gcr.io/arctic-eye-468/admin-front-end
         tag: $PACKAGE_VERSION
 ```
+
+One solution is to use an alpine image that supports `env --null`, such as the one created by [Max Metral](https://github.com/djMax): [gasbuddy/wercker-alpine](https://github.com/gas-buddy/docker-wercker-alpine). With this image, the problem should be resolved and enviroment variables created in the container should work as expected.
