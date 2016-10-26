@@ -59,7 +59,7 @@ execution, or on the wercker web will work.
 
 When using using an image based on the default Alpine image, you may find that variables you create (by `export var=value`) on the image arent't available to the internal/docker-push step. This is because Alpine by default doesn't have "env --null" support, which wercker uses to sync the env. This does not affect variables that were available to the image prior to the execution of the steps, such as wercker environment variables, variables defined on the Environment tab or pipeline config of the interface.
 
-In the example below, `$GCR_JSON_KEY_FILE` and `$GCR_REPOSITORY_NAME` (set via Environment tab) is available to the docker-push step and has a value, whereas `$PACKAGE_VERSION` is not and is in fact empty.
+In the example below, `$GCR_JSON_KEY_FILE` and `$GCR_REPOSITORY_NAME` (set via Environment tab) is available to the docker-push step and has a value, whereas `$PACKAGE_VERSION` is not and is in fact empty. Note that for simplicity, `version_from_package_dot_json` represents the value from the version field from the package.json.
 
 ```yaml
 push:
@@ -67,7 +67,7 @@ push:
   steps:
     - script:
         name: set docker image tag
-        code: export PACKAGE_VERSION=$WERCKER_GIT_COMMIT
+        code: export PACKAGE_VERSION="version_from_package_dot_json"
     - internal/docker-push:
         registry: https://gcr.io
         username: _json_key
@@ -76,4 +76,26 @@ push:
         tag: $PACKAGE_VERSION
 ```
 
-One solution is to use an alpine image that supports `env --null`, such as the one created by [Max Metral](https://github.com/djMax): [gasbuddy/wercker-alpine](https://github.com/gas-buddy/docker-wercker-alpine). With this image, the problem should be resolved and enviroment variables created in the container should work as expected.
+A possible solution is to install `coreutils` prior to exporting the environment variable, such as:
+
+```yaml
+box:
+  id: nginx:stable-alpine
+  cmd: /bin/sh
+build:
+  steps:
+    - script:
+        name: add coreutils
+        code: apk add --no-cache --update coreutils
+    - script:
+        name: set docker image tag
+        code: export PACKAGE_VERSION="version_from_package_dot_json"
+    - internal/docker-push:
+        registry: https://gcr.io
+        username: _json_key
+        password: $GCR_JSON_KEY_FILE
+        repository: $GCR_REPOSITORY_NAME
+        tag: $PACKAGE_VERSION
+```
+
+Alternatively, one can use an alpine image that supports `env --null`, such as the one created by [Max Metral](https://github.com/djMax): [gasbuddy/wercker-alpine](https://github.com/gas-buddy/docker-wercker-alpine). With this image, the problem should be resolved and enviroment variables created in the container should work as expected.
