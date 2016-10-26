@@ -57,13 +57,26 @@ execution, or on the wercker web will work.
 <a name="created-variables-not-available"></a>
 ### Environment variables I create are not available when using docker-push on Alpine
 
-When using using an image based on the default Alpine image, you may find that variables you create (by `export var=value`) on the image arent't available to the internal/docker-push step. This is because Alpine by default doesn't have "env --null" support, which wercker uses to sync the env. This does not affect variables that were available to the image prior to the execution of the steps, such as wercker environment variables, variables defined on the Environment tab or pipeline config of the interface.
+When using using an image based on the default Alpine image, you may find
+that variables you create (by `export var=value`) on the image arent't
+available to the internal/docker-push step. This is because Alpine by
+default doesn't have "env --null" support, which wercker uses to sync the
+env. This does not affect variables that were available to the image prior
+to the execution of the steps, such as wercker environment variables,
+variables defined on the Environment tab or pipeline config of the interface.
 
-In the example below, `$GCR_JSON_KEY_FILE` and `$GCR_REPOSITORY_NAME` (set via Environment tab) is available to the docker-push step and has a value, whereas `$PACKAGE_VERSION` is not and is in fact empty. Note that for simplicity, `version_from_package_dot_json` represents the value from the version field from the package.json.
+In the example below, `$GCR_JSON_KEY_FILE` and `$GCR_REPOSITORY_NAME`
+(set via Environment tab) is available to the docker-push step and has a
+value, whereas `$PACKAGE_VERSION` is not and is in fact empty. Note that for
+simplicity, `version_from_package_dot_json` represents the value from the
+version field from the package.json.
 
 ```yaml
 push:
-  box: nginx:stable-alpine
+  box:
+    id: nginx:stable-alpine
+    cmd: /bin/sh
+  
   steps:
     - script:
         name: set docker image tag
@@ -76,13 +89,15 @@ push:
         tag: $PACKAGE_VERSION
 ```
 
-A possible solution is to install `coreutils` prior to exporting the environment variable, such as:
+A possible solution is to install `coreutils` prior to exporting the
+environment variable, such as:
 
 ```yaml
-box:
-  id: nginx:stable-alpine
-  cmd: /bin/sh
-build:
+push:
+  box:
+    id: nginx:stable-alpine
+    cmd: /bin/sh
+  
   steps:
     - script:
         name: add coreutils
@@ -98,4 +113,6 @@ build:
         tag: $PACKAGE_VERSION
 ```
 
-Alternatively, one can use an alpine image that supports `env --null`, such as the one created by [Max Metral](https://github.com/djMax): [gasbuddy/wercker-alpine](https://github.com/gas-buddy/docker-wercker-alpine). With this image, the problem should be resolved and enviroment variables created in the container should work as expected.
+This will ensure that `env --null` is available, and results in the
+expected behavior when using the `$PACKAGE_VERSION` variable in the
+docker-push internal step.
